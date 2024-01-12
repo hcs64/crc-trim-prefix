@@ -6,13 +6,13 @@ const GF2_DIM: usize = 32;
 
 fn gf2_matrix_times(mat: &[u32; GF2_DIM], mut vec: u32) -> u32 {
     let mut sum = 0;
-    for i in 0..GF2_DIM {
+    for m in mat {
         if vec == 0 {
             break;
         }
 
         if vec >> 31 != 0 {
-            sum ^= mat[i];
+            sum ^= *m;
         }
         vec <<= 1;
     }
@@ -25,24 +25,24 @@ fn gf2_matrix_square(square: &mut [u32; GF2_DIM], mat: &[u32; GF2_DIM]) {
     }
 }
 
-pub fn prefix_crc(total_crc: u32, suffix_crc: u32, suffix_len: u32) -> u32 {
-    if suffix_len == 0 {
+pub fn trim(total_crc: u32, suffix_crc: u32, mut len2: u32) -> u32 {
+    if len2 == 0 {
         return total_crc;
     }
 
     let mut even = [0u32; GF2_DIM];
-    let mut odd = [0u32; GF2_DIM];
+
+    /* put operator for one zero bit in odd */
+    let mut odd = std::array::from_fn(|n| {
+        if n == 0 {
+            0xdb710641 /* CRC-32 "Un"polynomial */
+        } else {
+            1 << (32 - n)
+        }
+    });
 
     /* get crcA0 */
     let mut crc1 = total_crc ^ suffix_crc;
-
-    /* put operator for one zero bit in odd */
-    odd[0] = 0xdb710641; /* CRC-32 "Un"polynomial */
-    let mut row = 1 << 31;
-    for n in 1..GF2_DIM {
-        odd[n] = row;
-        row >>= 1;
-    }
 
     /* put operator for two zero bits in even */
     gf2_matrix_square(&mut even, &odd);
@@ -52,7 +52,6 @@ pub fn prefix_crc(total_crc: u32, suffix_crc: u32, suffix_len: u32) -> u32 {
 
     /* apply len2 zeros to crc1 (first square will put the operator for one
     zero byte, eight zero bits, in even) */
-    let mut len2 = suffix_len;
     while len2 != 0 {
         /* apply zeros operator for this bit of len2 */
         gf2_matrix_square(&mut even, &odd);

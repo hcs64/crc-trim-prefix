@@ -14,7 +14,9 @@ fn main() {
     }
     let mut in_file = File::open(&args[1]).expect("couldn't open prefix file");
 
-    let target_size = usize::from_str_radix(args[2].to_str().expect("bad target size string"), 10)
+    let target_size = args[2]
+        .to_str()
+        .and_then(|s| s.parse().ok())
         .expect("bad target size string");
     assert!(target_size as u32 as usize == target_size);
 
@@ -114,11 +116,11 @@ fn suffix_crc(prefix: &[u8], target_size: usize, target_crc: u32) -> u32 {
         // beginning, add 0 padding to the end
         crc = update_0(crc) ^ advance[usize::from(*b)];
     }
-    crc = crc ^ INIT_CRC;
+    crc ^= INIT_CRC;
 
     let pad_crc = zeroes(trim_len).finalize();
 
-    crc_trim_trailing::prefix_crc(crc, pad_crc, trim_len)
+    crc_trim_trailing::trim(crc, pad_crc, trim_len)
 }
 
 #[cfg(test)]
