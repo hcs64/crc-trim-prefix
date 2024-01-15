@@ -126,18 +126,59 @@ fn suffix_crc(prefix: &[u8], target_size: usize, target_crc: u32) -> u32 {
 #[cfg(test)]
 mod test {
     use super::suffix_crc;
+    use rand_xoshiro::rand_core::RngCore;
+    use rand_xoshiro::rand_core::SeedableRng;
+    use rand_xoshiro::Xoshiro256StarStar;
 
-    #[test]
-    fn test() {
-        let target = b"Hello, world!";
+    fn test_target(target: &[u8]) -> Result<(), String> {
         let target_crc = crc32fast::hash(target);
 
         for i in 1..target.len() {
             let (prefix, suffix) = target.split_at(i);
-            assert_eq!(
-                suffix_crc(prefix, target.len(), target_crc),
-                crc32fast::hash(suffix)
-            );
+            let expected = crc32fast::hash(suffix);
+            let actual = suffix_crc(prefix, target.len(), target_crc);
+            if expected != actual {
+                return Err(format!("i: {expected:#08x} != {actual:#08x}"));
+            }
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn small_test() {
+        test_target(b"Hello, world!").unwrap();
+    }
+
+    #[test]
+    fn small_zero_test() {
+        test_target(&[0; 29]).unwrap();
+        test_target(&[0; 30]).unwrap();
+        test_target(&[0; 31]).unwrap();
+        test_target(&[0; 128]).unwrap();
+    }
+
+    #[test]
+    fn small_rand_test() {
+        let mut target = vec![0; 128];
+        Xoshiro256StarStar::seed_from_u64(1).fill_bytes(target.as_mut_slice());
+        test_target(&target).unwrap();
+    }
+
+    #[test]
+    #[ignore]
+    fn large_rand_test() {
+        let mut target = vec![0; 1024 * 1024 * 300];
+        Xoshiro256StarStar::seed_from_u64(1).fill_bytes(target.as_mut_slice());
+
+        let target = target.as_slice();
+        let target_crc = crc32fast::hash(target);
+
+        for i in target.len() / 2 - 8..target.len() / 2 + 8 {
+            let (prefix, suffix) = target.split_at(i);
+            let expected = crc32fast::hash(suffix);
+            let actual = suffix_crc(prefix, target.len(), target_crc);
+            assert_eq!(expected, actual);
         }
     }
 }
