@@ -138,7 +138,7 @@ mod test {
             let expected = crc32fast::hash(suffix);
             let actual = suffix_crc(prefix, target.len(), target_crc);
             if expected != actual {
-                return Err(format!("i: {expected:#08x} != {actual:#08x}"));
+                return Err(format!("{i}: {expected:#08x} != {actual:#08x}"));
             }
         }
 
@@ -169,7 +169,7 @@ mod test {
     #[ignore]
     fn large_rand_test() {
         let mut target = vec![0; 1024 * 1024 * 300];
-        Xoshiro256StarStar::seed_from_u64(1).fill_bytes(target.as_mut_slice());
+        Xoshiro256StarStar::seed_from_u64(2).fill_bytes(target.as_mut_slice());
 
         let target = target.as_slice();
         let target_crc = crc32fast::hash(target);
