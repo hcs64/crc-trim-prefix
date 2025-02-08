@@ -1,3 +1,8 @@
+Archived because [find-ends](https://github.com/hcs64/find-ends) now has a superset of this
+functionality.
+
+---
+
 Say you have the crc32 for a file, but you only have the data for the beginning (prefix) of the file. crc-trim-prefix will compute the crc32 for the missing suffix, which might help in locating it.
 
 Usage: `crc-trim-prefix prefix_file target_size target_crc`
